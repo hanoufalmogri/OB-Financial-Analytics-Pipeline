@@ -1,0 +1,25 @@
+# Secrets
+.env
+!.env.example
+
+# Raw dataset (large, public, re-downloadable -- see README for source)
+data/raw/*
+!data/raw/.gitkeep
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# OS
+.DS_Store
+
+# Internal planning docs -- not for the public repo
+malaa-project-brief.md
+malaa-project-roadmap.md
