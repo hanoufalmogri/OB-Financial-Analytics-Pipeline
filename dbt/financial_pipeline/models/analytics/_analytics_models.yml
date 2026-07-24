@@ -18,3 +18,30 @@ models:
       - name: category_share_pct
         tests:
           - not_null
+
+  - name: recurring_payments
+    columns:
+      - name: card_id
+        tests:
+          - not_null
+      - name: merchant_id
+        tests:
+          - not_null
+      - name: typical_amount
+        tests:
+          - not_null
+      - name: detected_frequency
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['weekly', 'biweekly', 'monthly', 'quarterly']
+      - name: occurrence_count
+        tests:
+          - not_null
+      - name: first_occurrence
+        tests:
+          - not_null
+      - name: last_occurrence
+        tests:
+          - not_null
