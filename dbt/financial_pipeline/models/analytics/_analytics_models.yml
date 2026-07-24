@@ -45,3 +45,31 @@ models:
       - name: last_occurrence
         tests:
           - not_null
+
+  - name: health_score
+    columns:
+      - name: user_id
+        tests:
+          - unique
+          - not_null
+      - name: savings_rate
+        tests:
+          - not_null
+      - name: spending_volatility
+        tests:
+          - not_null
+      - name: debt_to_income
+        tests:
+          - not_null
+      - name: savings_rate_percentile
+        tests:
+          - not_null
+      - name: spending_stability_percentile
+        tests:
+          - not_null
+      - name: debt_to_income_percentile
+        tests:
+          - not_null
+      - name: health_score_percentile
+        tests:
+          - not_null
