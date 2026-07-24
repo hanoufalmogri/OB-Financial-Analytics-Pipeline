@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: spending_by_category
+    columns:
+      - name: user_id
+        tests:
+          - not_null
+      - name: month
+        tests:
+          - not_null
+      - name: mcc_category
+        tests:
+          - not_null
+      - name: total_spent
+        tests:
+          - not_null
+      - name: category_share_pct
+        tests:
+          - not_null

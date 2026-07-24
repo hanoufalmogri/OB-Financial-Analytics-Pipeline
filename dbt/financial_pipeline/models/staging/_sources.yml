@@ -9,26 +9,31 @@ sources:
           - name: gender
             tests:
               - accepted_values:
-                  values: ['Female', 'Male']
+                  arguments:
+                    values: ['Female', 'Male']
 
       - name: raw_cards
         columns:
           - name: card_brand
             tests:
               - accepted_values:
-                  values: ['Amex', 'Discover', 'Mastercard', 'Visa']
+                  arguments:
+                    values: ['Amex', 'Discover', 'Mastercard', 'Visa']
           - name: card_type
             tests:
               - accepted_values:
-                  values: ['Credit', 'Debit', 'Debit (Prepaid)']
+                  arguments:
+                    values: ['Credit', 'Debit', 'Debit (Prepaid)']
           - name: has_chip
             tests:
               - accepted_values:
-                  values: ['YES', 'NO']
+                  arguments:
+                    values: ['YES', 'NO']
           - name: card_on_dark_web
             tests:
               - accepted_values:
-                  values: ['Yes', 'No']
+                  arguments:
+                    values: ['Yes', 'No']
 
       - name: raw_mcc_codes
 
@@ -37,11 +42,13 @@ sources:
           - name: use_chip
             tests:
               - accepted_values:
-                  values: ['Chip Transaction', 'Online Transaction', 'Swipe Transaction']
+                  arguments:
+                    values: ['Chip Transaction', 'Online Transaction', 'Swipe Transaction']
 
       - name: raw_fraud_labels
         columns:
           - name: is_fraud
             tests:
               - accepted_values:
-                  values: ['Yes', 'No']
+                  arguments:
+                    values: ['Yes', 'No']

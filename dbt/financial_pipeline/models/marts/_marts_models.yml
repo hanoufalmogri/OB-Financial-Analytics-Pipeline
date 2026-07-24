@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: fct_transactions
+    columns:
+      - name: transaction_id
+        tests:
+          - unique
+          - not_null
+      - name: card_id
+        tests:
+          - not_null
+      - name: user_id
+        tests:
+          - not_null
+      - name: mcc_code
+        tests:
+          - not_null
+
+  - name: dim_merchant_category
+    columns:
+      - name: mcc_code
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_cashflow_summary
+    columns:
+      - name: user_id
+        tests:
+          - not_null
+      - name: month
+        tests:
+          - not_null
+      - name: total_inflow
+        tests:
+          - not_null
+      - name: total_outflow
+        tests:
+          - not_null
