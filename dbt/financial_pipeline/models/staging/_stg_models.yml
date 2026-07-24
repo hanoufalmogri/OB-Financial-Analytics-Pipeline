@@ -1,0 +1,72 @@
+version: 2
+
+models:
+  - name: stg_users
+    columns:
+      - name: user_id
+        tests:
+          - unique
+          - not_null
+      - name: gender
+        tests:
+          - not_null
+      - name: yearly_income
+        tests:
+          - not_null
+      - name: per_capita_income
+        tests:
+          - not_null
+      - name: total_debt
+        tests:
+          - not_null
+      - name: credit_score
+        tests:
+          - not_null
+
+  - name: stg_cards
+    columns:
+      - name: card_id
+        tests:
+          - unique
+          - not_null
+      - name: user_id
+        tests:
+          - not_null
+
+  - name: stg_mcc_codes
+    columns:
+      - name: mcc_code
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_transactions
+    columns:
+      - name: transaction_id
+        tests:
+          - unique
+          - not_null
+      - name: card_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_cards')
+                field: card_id
+      - name: mcc_code
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_mcc_codes')
+                field: mcc_code
+      - name: amount
+        tests:
+          - not_null
+
+  - name: stg_fraud_labels
+    columns:
+      - name: transaction_id
+        tests:
+          - unique
+          - not_null

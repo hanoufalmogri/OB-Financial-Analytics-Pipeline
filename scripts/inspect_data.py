@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
 # Phase 1 data inspection for the Caixabank Tech dataset.
-# Usage: python scripts/inspect_data.py [--data-dir data/raw] [--chunksize 1000000]
 import argparse
 import json
 from collections import Counter
