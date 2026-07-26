@@ -21,7 +21,7 @@ EXPECTED_COUNTS = {
     "raw_users": 2_000,
     "raw_cards": 6_146,
 }
-EXPECTED_TRANSACTIONS = 2_794_100  # 2017: 1,399,308 + 2018: 1,394,792, per Phase 1
+EXPECTED_TRANSACTIONS = 2_794_100  # 2017: 1,399,308 + 2018: 1,394,792, 
 
 
 def get_connection():
