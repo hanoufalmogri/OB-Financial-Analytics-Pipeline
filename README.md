@@ -1,6 +1,6 @@
 # Open Banking Financial Analytics Pipeline
 
-A data engineering portfolio project: a full bronze → staging → marts → analytics pipeline over real transaction-level financial data, a Next.js dashboard on top of it, and a small agentic natural-language layer for asking questions about a single user's finances.
+A data engineering portfolio project: a full bronze → staging → marts → analytics pipeline over real transaction-level financial data, a Next.js dashboard on top of it, and a small agentic layer for asking questions about a single user's finances.
 
 The domain — transaction aggregation, spending categorization, recurring payment detection, a financial health score — mirrors what an open banking / personal finance product's data team builds day to day. The dataset, however, is public and synthetic-provenance (see [Honest framing](#honest-framing) below): **this is not built for, with, or using any real fintech's data.**
 
@@ -35,7 +35,7 @@ Full table-by-table detail — every column, every modeling decision and why —
 | Dashboard | `web/` (Next.js, deployed on Vercel — *link pending, see below*) | Cash flow trend, spending by category, recurring payments, health score explorer. |
 | Agent | `web/app/ask`, `web/lib/agent.ts`, `web/lib/tools.ts` | Natural-language Q&A over one user's finances. See [The agent layer](#the-agent-layer-not-a-dexter-fork) below. |
 
-> **Live dashboard:** not yet deployed to Vercel. Until then, run it locally — see [Running it yourself](#running-it-yourself).
+> **Live dashboard:** https://ob-financial-analytics-pipeline-lfhpb98t3.vercel.app/ask)
 
 ## Dataset
 
@@ -61,7 +61,7 @@ Separately from the above, `raw_fraud_labels` also ended up filtered down to onl
 - **Recurring payment detection is an honest low-confidence heuristic, not a finished subscription list.** The dataset only has an opaque `merchant_id` and a location — never a merchant name — so amount-and-interval matching alone can't distinguish a genuine recurring subscription from someone's coincidentally similar weekly coffee habit. Consistent with that limitation: every one of the 47 detected series sits at exactly the minimum 3 occurrences allowed, and several are small, weekly, low-dollar amounts — the profile of repeat everyday purchases, not typical subscriptions. The dashboard surfaces this caveat directly next to the table, not just in this README.
 - Every one of the above is enforced or checked by an actual dbt test (`assert_no_zero_income_users`, `assert_recurring_min_occurrences`, `assert_recurring_span_consistent`, `assert_cashflow_non_negative`, `assert_category_shares_sum_to_100`, `assert_health_score_bounded`, `assert_no_zero_avg_outflow_users`), not just described in prose.
 
-## The agent layer (not a Dexter fork)
+## The agent layer
 
 `/ask` lets you ask a natural-language question about one user's finances (e.g. *"Why did user 1664's spending increase in October 2017?"*). It's deliberately small: **two tools** (`get_cashflow_trend`, `get_spending_by_category`), both scoped to a single `user_id` so the agent can never aggregate or compare across users, calling Claude via the Anthropic API in a plan → tool-call → validate loop — the agent decides which tool(s) to call, looks at the result, decides whether it needs another call, then answers using only what the tools returned.
 
@@ -71,7 +71,7 @@ This layer was built last, on top of an already-working pipeline, and scoped dow
 
 ## Honest framing
 
-- This is a personal portfolio project. **No real Malaa data, systems, or users are used or referenced anywhere in this repo.**
+- This is a personal portfolio project. **No real data, systems, or users are used or referenced anywhere in this repo.**
 - The dataset is public and real-provenance (Caixabank Tech, released for the 2024 AI Hackathon) — not proprietary financial-institution data, and not collected from any real end user of any product.
 - The financial health score and the `/ask` agent's answers are **illustrative outputs of a portfolio project, not real financial advice** and not a real product's scoring methodology.
 - Dexter is credited above as an architectural inspiration for the agent's reasoning loop — it is not incorporated as a dependency, and no Dexter code is present in this repo.
