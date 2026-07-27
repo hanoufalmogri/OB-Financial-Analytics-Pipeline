@@ -35,7 +35,7 @@ Full table-by-table detail — every column, every modeling decision and why —
 | Dashboard | `web/` (Next.js, deployed on Vercel — *link pending, see below*) | Cash flow trend, spending by category, recurring payments, health score explorer. |
 | Agent | `web/app/ask`, `web/lib/agent.ts`, `web/lib/tools.ts` | Natural-language Q&A over one user's finances. See [The agent layer](#the-agent-layer-not-a-dexter-fork) below. |
 
-> **Live dashboard:** https://ob-financial-analytics-pipeline-lfhpb98t3.vercel.app/ask)
+> **Live dashboard:** https://ob-financial-analytics-pipeline-lfhpb98t3.vercel.app
 
 ## Dataset
 
