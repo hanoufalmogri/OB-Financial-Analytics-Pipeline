@@ -6,6 +6,7 @@ const links = [
   { href: "/spending", label: "Spending" },
   { href: "/recurring", label: "Recurring" },
   { href: "/health-score", label: "Health Score" },
+  { href: "/ask", label: "Ask" },
 ];
 
 export default function Nav() {
