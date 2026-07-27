@@ -28,15 +28,20 @@ export interface CashflowPoint {
 export async function getCashflowTrend(): Promise<CashflowPoint[]> {
   const rows = await query<{ month: string; total_outflow: string; total_inflow: string }>(`
     select
-      month,
+      month::text as month,
       sum(total_outflow) as total_outflow,
       sum(total_inflow) as total_inflow
     from public_marts.fct_cashflow_summary
     group by month
     order by month
   `);
+  // Cast to text in SQL rather than formatting a JS Date -- pg's default DATE
+  // parser builds a Date at local midnight, so toISOString() (which converts
+  // to UTC) silently shifts the label back a month whenever the server's
+  // local timezone has a positive UTC offset. Slicing the raw "YYYY-MM-DD"
+  // text avoids that entirely.
   return rows.map((r) => ({
-    month: new Date(r.month).toISOString().slice(0, 7),
+    month: r.month.slice(0, 7),
     total_outflow: parseFloat(r.total_outflow),
     total_inflow: parseFloat(r.total_inflow),
   }));
@@ -117,15 +122,20 @@ export async function getRecurringPayments(): Promise<RecurringPayment[]> {
   }>(`
     select
       card_id, merchant_id, typical_amount, detected_frequency,
-      occurrence_count, first_occurrence, last_occurrence
+      occurrence_count,
+      first_occurrence::text as first_occurrence,
+      last_occurrence::text as last_occurrence
     from public_analytics.recurring_payments
     order by occurrence_count desc, typical_amount desc
   `);
+  // Cast to text in SQL -- see the comment in getCashflowTrend for why a JS
+  // Date + toISOString() round-trip silently shifts the date under a
+  // positive-UTC-offset server timezone.
   return rows.map((r) => ({
     ...r,
     typical_amount: parseFloat(r.typical_amount),
-    first_occurrence: new Date(r.first_occurrence).toISOString().slice(0, 10),
-    last_occurrence: new Date(r.last_occurrence).toISOString().slice(0, 10),
+    first_occurrence: r.first_occurrence.slice(0, 10),
+    last_occurrence: r.last_occurrence.slice(0, 10),
   }));
 }
 
