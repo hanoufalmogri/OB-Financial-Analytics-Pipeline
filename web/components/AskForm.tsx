@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ToolCallRecord {
   name: string;
@@ -15,14 +17,43 @@ interface AskResponse {
 
 const EXAMPLE_QUESTION = "Why did user 1664's spending increase in October 2017?";
 
+function describeToolCall(call: ToolCallRecord): string {
+  const input = (call.input ?? {}) as Record<string, unknown>;
+  if (call.name === "get_cashflow_trend") {
+    return `Looked up the cash flow trend for user ${input.user_id}`;
+  }
+  if (call.name === "get_spending_by_category") {
+    return `Looked up ${input.month} spending by category for user ${input.user_id}`;
+  }
+  return `${call.name}(${JSON.stringify(input)})`;
+}
+
+function useElapsedSeconds(active: boolean): number {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => {
+      clearInterval(id);
+      setSeconds(0);
+    };
+  }, [active]);
+
+  return active ? seconds : 0;
+}
+
 export default function AskForm() {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AskResponse | null>(null);
+  const requestId = useRef(0);
+  const elapsed = useElapsedSeconds(loading);
 
   async function submit(q: string) {
     const trimmed = q.trim();
     if (!trimmed || loading) return;
+    const thisRequest = ++requestId.current;
     setLoading(true);
     setResult(null);
     try {
@@ -32,11 +63,13 @@ export default function AskForm() {
         body: JSON.stringify({ question: trimmed }),
       });
       const data: AskResponse = await res.json();
-      setResult(data);
+      if (requestId.current === thisRequest) setResult(data);
     } catch {
-      setResult({ error: "Request failed. Check that the dev server and database are reachable." });
+      if (requestId.current === thisRequest) {
+        setResult({ error: "Request failed. Check that the dev server and database are reachable." });
+      }
     } finally {
-      setLoading(false);
+      if (requestId.current === thisRequest) setLoading(false);
     }
   }
 
@@ -50,84 +83,53 @@ export default function AskForm() {
         style={{ display: "flex", gap: 8, marginBottom: 4 }}
       >
         <input
+          className="input"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder={EXAMPLE_QUESTION}
-          style={{
-            flex: 1,
-            fontFamily: "var(--font-sans)",
-            fontSize: 14,
-            padding: "10px 12px",
-            borderRadius: 6,
-            border: "1px solid var(--border)",
-            background: "var(--surface)",
-            color: "var(--ink)",
-          }}
         />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 14,
-            padding: "10px 18px",
-            borderRadius: 6,
-            border: "1px solid var(--accent-border)",
-            background: loading ? "var(--accent-soft)" : "var(--accent)",
-            color: loading ? "var(--accent)" : "#fff",
-            cursor: loading ? "default" : "pointer",
-          }}
-        >
-          {loading ? "Asking..." : "Ask"}
+        <button type="submit" disabled={loading} className="btn">
+          {loading ? "Asking…" : "Ask"}
         </button>
       </form>
       <button
         type="button"
+        className="btn-link"
         onClick={() => {
           setQuestion(EXAMPLE_QUESTION);
           submit(EXAMPLE_QUESTION);
-        }}
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          color: "var(--muted)",
-          background: "none",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          textDecoration: "underline",
         }}
       >
         Try the example question
       </button>
 
+      {loading && (
+        <p className="stat-sub" style={{ marginTop: 16 }}>
+          Calling tools and reasoning through the data. This can take up to a minute.
+          {elapsed > 0 ? ` (${elapsed}s)` : ""}
+        </p>
+      )}
+
       {result?.error && (
-        <p style={{ color: "var(--accent)", marginTop: 16 }}>{result.error}</p>
+        <p className="text-attention" style={{ marginTop: 16 }}>
+          {result.error}
+        </p>
       )}
 
       {result?.answer && (
         <div style={{ marginTop: 20 }}>
           <p className="stat-label">Answer</p>
-          <p style={{ marginTop: 6, lineHeight: 1.6 }}>{result.answer}</p>
+          <div className="markdown-answer">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.answer}</ReactMarkdown>
+          </div>
 
           {result.toolCalls && result.toolCalls.length > 0 && (
             <div style={{ marginTop: 20 }}>
               <p className="stat-label">Tools called</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
                 {result.toolCalls.map((call, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 12.5,
-                      padding: "8px 10px",
-                      borderRadius: 6,
-                      border: "1px solid var(--border)",
-                      background: "var(--bg)",
-                    }}
-                  >
-                    <span className="badge">{call.name}</span>{" "}
-                    {JSON.stringify(call.input)}
+                  <div key={i} className="tool-call-row">
+                    <span className="badge">{call.name}</span> {describeToolCall(call)}
                   </div>
                 ))}
               </div>

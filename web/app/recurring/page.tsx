@@ -1,4 +1,7 @@
 import { getRecurringPayments } from "@/lib/db";
+import RecurringTable from "@/components/RecurringTable";
+
+export const metadata = { title: "Recurring Payments | OB Financial Analytics" };
 
 export default async function RecurringPage() {
   const payments = await getRecurringPayments();
@@ -8,45 +11,20 @@ export default async function RecurringPage() {
       <p className="eyebrow">Recurring Payments</p>
       <h1>{payments.length} detected series</h1>
       <p className="page-desc">
-        Grouped by card + merchant + similar amount, then checked for a regular repeat interval.
+        Same card, same merchant, similar amount, on a regular interval. That&apos;s the whole test.
       </p>
 
-      <div className="badge" style={{ marginBottom: 24 }}>
-        Low-confidence candidates &mdash; not a confirmed subscription list. Detection is based purely on
-        amount + interval matching, with no merchant name data available to corroborate the match. See
-        docs/scope-decision.md for the full limitation.
+      <div className="callout" style={{ marginBottom: 24 }}>
+        <strong>Low-confidence candidates, not subscriptions.</strong> There&apos;s no merchant name in
+        this data, so a $4 coffee every Tuesday looks identical to a real subscription. It probably
+        isn&apos;t one. See docs/scope-decision.md for the honest version of this caveat.
       </div>
 
-      <div className="overflow-x">
-        <table>
-          <thead>
-            <tr>
-              <th>Card ID</th>
-              <th>Merchant ID</th>
-              <th>Typical amount</th>
-              <th>Frequency</th>
-              <th>Occurrences</th>
-              <th>First seen</th>
-              <th>Last seen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((p, i) => (
-              <tr key={`${p.card_id}-${p.merchant_id}-${i}`}>
-                <td>{p.card_id}</td>
-                <td>{p.merchant_id}</td>
-                <td>${p.typical_amount.toFixed(2)}</td>
-                <td style={{ fontFamily: "var(--font-sans)", textTransform: "capitalize" }}>
-                  {p.detected_frequency}
-                </td>
-                <td>{p.occurrence_count}</td>
-                <td>{p.first_occurrence}</td>
-                <td>{p.last_occurrence}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {payments.length === 0 ? (
+        <p className="stat-sub">No recurring series detected.</p>
+      ) : (
+        <RecurringTable payments={payments} />
+      )}
     </>
   );
 }

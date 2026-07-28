@@ -1,6 +1,8 @@
 import { getHealthScores } from "@/lib/db";
 import HealthScoreExplorer from "@/components/HealthScoreExplorer";
 
+export const metadata = { title: "Health Score | OB Financial Analytics" };
+
 export default async function HealthScorePage() {
   const rows = await getHealthScores();
 
@@ -9,12 +11,18 @@ export default async function HealthScorePage() {
       <p className="eyebrow">Financial Health Score</p>
       <h1>Percentile-based, relative to the user population</h1>
       <p className="page-desc">
-        Combines savings rate, spending stability, and debt-to-income into one averaged percentile &mdash;
-        relative standing, not an absolute grade. Only users with at least one 2017&ndash;2018 transaction
-        have a score ({rows.length.toLocaleString()} of 2,000 users).
+        Savings rate, spending stability, and debt-to-income, averaged into one percentile. It tells
+        you where someone stands next to everyone else, not whether they&apos;re doing well.
+        {" "}
+        {rows.length.toLocaleString()} of 2,000 users show up here. The rest never made a
+        transaction in this window, which is its own kind of answer.
       </p>
 
-      <HealthScoreExplorer rows={rows} />
+      {rows.length === 0 ? (
+        <p className="stat-sub">No scored users.</p>
+      ) : (
+        <HealthScoreExplorer rows={rows} />
+      )}
     </>
   );
 }

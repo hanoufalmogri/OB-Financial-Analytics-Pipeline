@@ -1,16 +1,16 @@
 # Open Banking Financial Analytics Pipeline
 
-A data engineering portfolio project: a full bronze → staging → marts → analytics pipeline over real transaction-level financial data, a Next.js dashboard on top of it, and a small agentic layer for asking questions about a single user's finances.
+A bronze → staging → marts → analytics pipeline over two years of real transaction data, with a dashboard and a small agent on top. Built the way an open banking data team would actually build it, not staged to look that way.
 
-The domain — transaction aggregation, spending categorization, recurring payment detection, a financial health score — mirrors what an open banking / personal finance product's data team builds day to day. The dataset, however, is public and synthetic-provenance (see [Honest framing](#honest-framing) below): **this is not built for, with, or using any real fintech's data.**
+The dataset is public: Caixabank Tech, released for a 2024 hackathon. Not proprietary, and not anyone's real transactions. The health score is real math, applied to invented stakes.
 
 ## What this demonstrates
 
-- **Schema design** — a star-schema-style warehouse (dimensions + facts) designed from first inspecting the raw data, not assumed in advance. See [`docs/schema.md`](docs/schema.md) for the full ER diagram and the reasoning behind every modeling choice.
-- **Pipeline construction** — a bronze (raw, unmodified) → staging (cleaned, typed) → marts (star schema) → analytics (business logic) layering, built with dbt on Postgres.
-- **Data quality practice** — dbt schema tests (`not_null`, `unique`, `relationships`, `accepted_values`) plus seven custom singular tests asserting business invariants (e.g. cash flow totals can't be negative, category shares must sum to 100%, health score percentiles must be bounded 0–100).
-- **Analytical thinking** — cash flow trends, category-level spending breakdowns, low-confidence recurring-payment detection, and a percentile-based financial health score built from three defensible components rather than an arbitrary weighted formula.
-- **Applied agentic AI** — a small, purpose-built natural-language layer (2 tools, one reliable demo question, built last) on top of the same warehouse, not a separate product.
+- **Schema design**: a star-schema warehouse, shaped by what the raw data actually looked like, not decided in advance. Full reasoning in [`docs/schema.md`](docs/schema.md).
+- **Pipeline construction**: bronze (raw, untouched) → staging (typed, cleaned) → marts (star schema) → analytics, built with dbt on Postgres.
+- **Data quality practice**: dbt's schema tests, plus seven custom ones checking things like "cash flow totals can't go negative" and "category shares actually sum to 100." If a number doesn't check out, something's supposed to fail.
+- **Analytical thinking**: cash flow trends, category spending, a recurring-payment detector that admits its own limits, and a health score built from three components instead of one arbitrary formula.
+- **A small agent**: two tools, one demo question, built last, on purpose.
 
 ## Architecture
 
@@ -24,57 +24,57 @@ flowchart LR
     E --> G["/ask agent (Claude + 2 tools)"]
 ```
 
-Full table-by-table detail — every column, every modeling decision and why — lives in [`docs/schema.md`](docs/schema.md).
+Every column and why it's there lives in [`docs/schema.md`](docs/schema.md). This is just the map.
 
 | Layer | Where | What |
 |---|---|---|
-| Bronze | `ingestion/load_bronze.py` → `raw_*` tables | Raw files loaded into Postgres (Neon) completely unmodified. No cleaning, no filtering beyond the scope decisions below. |
-| Staging | `dbt/financial_pipeline/models/staging/` (`stg_cards`, `stg_transactions`, `stg_users`, `stg_mcc_codes`, `stg_fraud_labels`) | Type casting (e.g. `"$29278"` → numeric), `expires`/`acct_open_date` split into month/year integer pairs rather than fabricating a day, `"Yes"/"No"` → boolean. |
-| Marts | `dbt/financial_pipeline/models/marts/` (`fct_transactions`, `fct_cashflow_summary`, `dim_merchant_category`) | Star-schema fact/dimension tables. `fct_transactions` reaches a user via `card_id → dim_cards → user_id`, not a duplicated `user_id` column (verified zero exceptions across 13.3M source rows before deciding this). |
-| Analytics | `dbt/financial_pipeline/models/analytics/` (`spending_by_category`, `recurring_payments`, `health_score`) | The business-logic layer the dashboard and agent both read from. |
-| Dashboard | `web/` (Next.js, deployed on Vercel — *link pending, see below*) | Cash flow trend, spending by category, recurring payments, health score explorer. |
-| Agent | `web/app/ask`, `web/lib/agent.ts`, `web/lib/tools.ts` | Natural-language Q&A over one user's finances. See [The agent layer](#the-agent-layer-not-a-dexter-fork) below. |
+| Bronze | `ingestion/load_bronze.py` → `raw_*` tables | Raw files loaded into Postgres (Neon), untouched. No cleaning, no filtering beyond the scope decisions below. |
+| Staging | `dbt/financial_pipeline/models/staging/` (`stg_cards`, `stg_transactions`, `stg_users`, `stg_mcc_codes`, `stg_fraud_labels`) | Type casting (`"$29278"` → an actual number), `expires`/`acct_open_date` split into month/year pairs rather than inventing a day that was never in the source, `"Yes"/"No"` → boolean. |
+| Marts | `dbt/financial_pipeline/models/marts/` (`fct_transactions`, `fct_cashflow_summary`, `dim_merchant_category`) | Star-schema fact/dimension tables. `fct_transactions` reaches a user via `card_id → dim_cards → user_id`, not a duplicated `user_id` column. Checked zero exceptions across 13.3M rows before deciding that was safe. |
+| Analytics | `dbt/financial_pipeline/models/analytics/` (`spending_by_category`, `recurring_payments`, `health_score`) | The layer the dashboard and agent actually read from. |
+| Dashboard | `web/` (Next.js, on Vercel) | Cash flow, spending by category, recurring payments, health score explorer. |
+| Agent | `web/app/ask`, `web/lib/agent.ts`, `web/lib/tools.ts` | Natural-language Q&A over one user's finances. See [The agent layer](#the-agent-layer) below. |
 
 > **Live dashboard:** https://ob-financial-analytics-pipeline-lfhpb98t3.vercel.app
 
 ## Dataset
 
-**Source:** Caixabank Tech financial dataset, released for the **2024 AI Hackathon**. Real relational structure — separate linked files for transactions, cards, users, and merchant category codes — rather than one pre-flattened table, which is what made it worth using over a purely generated alternative.
+**Source:** Caixabank Tech, released for the 2024 AI Hackathon. Actual relational structure: separate linked files for transactions, cards, users, merchant codes, not one flattened table someone already did the joining for.
 
 **Files used:** `transactions_data.csv`, `cards_data.csv`, `users_data.csv`, `mcc_codes.json`, `train_fraud_labels.json`.
 
 ### Scope-down: why 2017–2018 only
 
-The full dataset spans 2010–2019. Inspecting it first showed transaction volume climbing from 1.24M (2010) to a peak of ~1.39–1.40M/year in 2016–2018, then dropping to 1.16M in 2019 — not a real decline, but because the 2019 data is truncated (it ends October 31, not December 31). **2017 and 2018 are the two highest-volume years that are each fully represented**, giving ~2.79M transactions across two clean, comparable years without carrying eight years of data the project doesn't need. Full detail in [`docs/scope-decision.md`](docs/scope-decision.md).
+The full dataset spans 2010–2019. Volume climbs from 1.24M transactions (2010) to a peak around 1.39–1.40M/year (2016–2018), then drops to 1.16M in 2019. Not a real decline, just a truncated year (it stops October 31, not December 31). **2017 and 2018 are the two highest-volume years that are each fully represented**, giving ~2.79M transactions across two clean, comparable years, without dragging along eight more years the analysis doesn't need. Full detail in [`docs/scope-decision.md`](docs/scope-decision.md).
 
-That filter is applied once, at ingestion, directly on `transactions_data.csv`. `fraud_labels` doesn't need a separate date filter — once transactions are scoped, any label referencing an out-of-range transaction simply has no match.
+That filter is applied once, at ingestion, directly on `transactions_data.csv`. `fraud_labels` doesn't need its own date filter: once transactions are scoped, an out-of-range label just has nothing to join to.
 
-### A second, unrelated scoping reason: `raw_fraud_labels` and Neon's free-tier storage cap
+### A second, unrelated scoping reason: `raw_fraud_labels` and a storage cap
 
-Separately from the above, `raw_fraud_labels` also ended up filtered down to only the transaction IDs present in the 2017–2018 slice — but that wasn't a data-quality choice, it was forced by **Neon's free-tier 512MB total project storage cap**. Loading everything unfiltered first showed the full, all-years `raw_fraud_labels` table alone at 377MB, plus ~444MB for the 2017–2018 transactions — ~822MB against a 512MB budget. Filtering the labels down to just the in-scope transaction IDs brought the project to 445MB total, at 67.0% label coverage — consistent with the 67% coverage found across the *full* dataset, so the filtering didn't skew anything, it just removed labels that could never be joined to anything downstream anyway.
+`raw_fraud_labels` also ended up filtered to only the transaction IDs present in the 2017–2018 slice. Not a data-quality call this time: a **Neon free-tier 512MB storage cap**. Unfiltered, the full `raw_fraud_labels` table alone was 377MB, plus ~444MB for the 2017–2018 transactions: ~822MB against a 512MB budget, which is a problem regardless of how good the modeling is. Filtering the labels down to the in-scope transaction IDs brought the project to 445MB total, at 67.0% label coverage, matching the 67% coverage found across the *full* dataset. Nothing got skewed; it just dropped labels that could never join to anything downstream anyway.
 
 ## Key data quality decisions
 
-- **Duplicate transactions are flagged, not deleted.** 36 transactions (within the 2017–2018 scope) share the same card, minute-level timestamp, merchant, and amount as another row under a different `transaction_id` — reading like a genuine duplicate-write artifact in the source system. They stay in `fct_transactions` (flagged `is_duplicate_candidate`, for audit visibility), but are excluded from `fct_cashflow_summary` and should be excluded from any future financial-total calculation, since letting them inflate a spending total would misrepresent the real numbers.
-- **Zero-amount transactions are flagged, not filtered anywhere.** 10,639 transactions (0.08%) have an amount of exactly 0 — rarer and more worth a second look than negative amounts (~5% of rows, read as ordinary refunds/reversals). Unlike duplicates, these are ambiguous (could be legitimate authorization holds), so the pipeline only surfaces the flag and leaves the filtering decision to whatever consumes it.
-- **`fraud_labels` is joined with a `LEFT JOIN`, never an `INNER JOIN`.** Labels exist for only 67% of transactions — modeling it as "every transaction has one" would silently drop a third of transactions from any query that touches it.
-- **Recurring payment detection is an honest low-confidence heuristic, not a finished subscription list.** The dataset only has an opaque `merchant_id` and a location — never a merchant name — so amount-and-interval matching alone can't distinguish a genuine recurring subscription from someone's coincidentally similar weekly coffee habit. Consistent with that limitation: every one of the 47 detected series sits at exactly the minimum 3 occurrences allowed, and several are small, weekly, low-dollar amounts — the profile of repeat everyday purchases, not typical subscriptions. The dashboard surfaces this caveat directly next to the table, not just in this README.
-- Every one of the above is enforced or checked by an actual dbt test (`assert_no_zero_income_users`, `assert_recurring_min_occurrences`, `assert_recurring_span_consistent`, `assert_cashflow_non_negative`, `assert_category_shares_sum_to_100`, `assert_health_score_bounded`, `assert_no_zero_avg_outflow_users`), not just described in prose.
+- **Duplicate transactions are flagged, not deleted.** 36 transactions (within the 2017–2018 scope) share the same card, minute-level timestamp, merchant, and amount as another row under a different `transaction_id`. Reads like a genuine duplicate-write in the source system, not coincidence. They stay in `fct_transactions`, flagged, so nothing silently disappears, but they're excluded from `fct_cashflow_summary` and anything else that totals money, because counting them twice isn't a data-quality nuance. It's just wrong.
+- **Zero-amount transactions are flagged, not filtered anywhere.** 10,639 transactions (0.08%) sit at exactly 0: rarer, and more worth a second look, than negative amounts (~5% of rows, ordinary refunds). Unlike duplicates, these are genuinely ambiguous: could be authorization holds. So the pipeline flags them and leaves the call to whoever's actually using the number.
+- **`fraud_labels` is joined with a `LEFT JOIN`, never an `INNER JOIN`.** Labels cover 67% of transactions. Treat that as "every transaction has one" and a third of the data quietly vanishes from any query that touches it.
+- **Recurring payment detection is an honest low-confidence heuristic, not a finished subscription list.** There's no merchant name in this data, just an opaque ID and a location, so amount-and-interval matching can't tell a real subscription from a coincidentally similar weekly coffee habit. The data agrees: every one of the 47 detected series sits at exactly the minimum 3 occurrences allowed, several small and weekly. The profile of a coffee habit, not a subscription. The dashboard says this next to the table, not just here.
+- All of the above is enforced by an actual dbt test (`assert_no_zero_income_users`, `assert_recurring_min_occurrences`, `assert_recurring_span_consistent`, `assert_cashflow_non_negative`, `assert_category_shares_sum_to_100`, `assert_health_score_bounded`, `assert_no_zero_avg_outflow_users`). Every figure has to tie back to another figure, and when it doesn't, there's a reason worth finding.
 
 ## The agent layer
 
-`/ask` lets you ask a natural-language question about one user's finances (e.g. *"Why did user 1664's spending increase in October 2017?"*). It's deliberately small: **two tools** (`get_cashflow_trend`, `get_spending_by_category`), both scoped to a single `user_id` so the agent can never aggregate or compare across users, calling Claude via the Anthropic API in a plan → tool-call → validate loop — the agent decides which tool(s) to call, looks at the result, decides whether it needs another call, then answers using only what the tools returned.
+`/ask` answers a natural-language question about one user's finances. *"Why did user 1664's spending increase in October 2017?"* is the one it's actually been tested against. It's small on purpose: **two tools** (`get_cashflow_trend`, `get_spending_by_category`), both scoped to a single `user_id` so it can never mix data across people, calling Claude in a plan → tool-call → validate loop. It decides which tool to call, looks at what comes back, decides if it needs another call, then answers using only that.
 
-The loop's shape takes inspiration from how agentic research tools like [Dexter](https://github.com/virattt/dexter) (an open-source autonomous financial research agent by virattt) structure their reasoning — specifically the plan → tool-call → validate pattern. It is **built independently, against this project's own tools and data — not a fork of, or dependency on, the Dexter codebase.**
+The loop's shape takes inspiration from how agentic research tools like [Dexter](https://github.com/virattt/dexter) (an open-source financial research agent by virattt) structure their reasoning: specifically plan → tool-call → validate. It's built independently, against this project's own tools and data. No Dexter code, no dependency on it.
 
-This layer was built last, on top of an already-working pipeline, and scoped down hard on purpose: 2 tools instead of a larger toolset, one reliable demo question prioritized over breadth. See the comment at the top of `web/lib/agent.ts` for the same note in context.
+Built last, on top of an already-working pipeline, and scoped down hard: two tools instead of a bigger toolset, one demo question that reliably works instead of several that might. Same note, in context, at the top of `web/lib/agent.ts`.
 
 ## Honest framing
 
-- This is a personal portfolio project. **No real data, systems, or users are used or referenced anywhere in this repo.**
-- The dataset is public and real-provenance (Caixabank Tech, released for the 2024 AI Hackathon) — not proprietary financial-institution data, and not collected from any real end user of any product.
-- The financial health score and the `/ask` agent's answers are **illustrative outputs of a portfolio project, not real financial advice** and not a real product's scoring methodology.
-- Dexter is credited above as an architectural inspiration for the agent's reasoning loop — it is not incorporated as a dependency, and no Dexter code is present in this repo.
+- This is a personal portfolio project. No real data, systems, or users are used or referenced anywhere in this repo.
+- The dataset is public and real-provenance (Caixabank Tech, 2024 AI Hackathon), not proprietary, not collected from any real end user of any product.
+- The health score and the `/ask` agent's answers are illustrative outputs of a portfolio project, not real financial advice, and not any real product's scoring methodology.
+- Dexter is credited above as an inspiration for the agent's reasoning loop, not a dependency. No Dexter code is present in this repo.
 
 ## Running it yourself
 

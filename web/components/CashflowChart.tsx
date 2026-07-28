@@ -19,15 +19,15 @@ export default function CashflowChart({ data }: { data: CashflowPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={340}>
       <LineChart data={data} margin={{ top: 8, right: 20, left: 4, bottom: 0 }}>
-        <CartesianGrid stroke="#DCE2ED" vertical={false} />
+        <CartesianGrid stroke="#E4D9D9" vertical={false} />
         <XAxis
           dataKey="month"
-          tick={{ fontSize: 11, fill: "#5B6684" }}
-          axisLine={{ stroke: "#DCE2ED" }}
+          tick={{ fontSize: 11, fill: "#7A6165" }}
+          axisLine={{ stroke: "#E4D9D9" }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#5B6684" }}
+          tick={{ fontSize: 11, fill: "#7A6165" }}
           axisLine={false}
           tickLine={false}
           tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
@@ -36,7 +36,7 @@ export default function CashflowChart({ data }: { data: CashflowPoint[] }) {
         <Tooltip
           contentStyle={{
             background: "#FFFFFF",
-            border: "1px solid #DCE2ED",
+            border: "1px solid #E4D9D9",
             borderRadius: 6,
             fontSize: 12,
           }}
@@ -47,7 +47,7 @@ export default function CashflowChart({ data }: { data: CashflowPoint[] }) {
           type="monotone"
           dataKey="total_outflow"
           name="Outflow"
-          stroke="#101A33"
+          stroke="#9C2B47"
           strokeWidth={2}
           dot={false}
           activeDot={{ r: 4 }}
@@ -56,7 +56,7 @@ export default function CashflowChart({ data }: { data: CashflowPoint[] }) {
           type="monotone"
           dataKey="total_inflow"
           name="Inflow"
-          stroke="#4A5A8C"
+          stroke="#5E2030"
           strokeWidth={2}
           dot={false}
           activeDot={{ r: 4 }}

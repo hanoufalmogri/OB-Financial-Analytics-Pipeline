@@ -1,12 +1,13 @@
 :root {
-  --bg: #f6f8fb;
+  --bg: #f7f3f1;
   --surface: #ffffff;
-  --border: #dce2ed;
-  --ink: #101a33;
-  --muted: #5b6684;
-  --accent: #a6314a;
-  --accent-soft: #f7e9ec;
-  --accent-border: #e3b9c1;
+  --border: #e4d9d9;
+  --ink: #241a1c;
+  --muted: #7a6165;
+  --accent: #9c2b47;
+  --accent-2: #5e2030;
+  --accent-soft: #f3e3e6;
+  --accent-border: #dcb3bc;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
 }
@@ -123,6 +124,10 @@ h1 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .grid-4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -180,4 +185,181 @@ tbody tr:last-child td {
 
 tbody tr:hover td {
   background: var(--accent-soft);
+}
+
+/* --- Callouts (longer caveat text -- .badge is for short pill labels) --- */
+
+.callout {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 14px 16px;
+  border-radius: 10px;
+}
+
+.callout strong {
+  color: var(--accent);
+}
+
+/* --- Section bridge heading (e.g. between a chart and a supporting table) --- */
+
+.section-heading {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 28px 0 10px;
+}
+
+/* --- Qualitative text color, used for at-a-glance percentile framing --- */
+
+.text-quiet {
+  color: var(--muted);
+}
+
+.text-attention {
+  color: var(--accent);
+}
+
+/* --- Form controls --- */
+
+.input {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  width: 100%;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.btn {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 6px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: default;
+}
+
+.btn-link {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* --- Sortable table headers --- */
+
+th button {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+th button:hover {
+  color: var(--ink);
+}
+
+/* --- Loading skeleton --- */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--border) 25%, var(--accent-soft) 37%, var(--border) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: 10px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* --- Agent answer rendering --- */
+
+.markdown-answer {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.markdown-answer > * + * {
+  margin-top: 12px;
+}
+
+.markdown-answer h1,
+.markdown-answer h2,
+.markdown-answer h3 {
+  font-size: 14.5px;
+  font-weight: 650;
+  margin-top: 18px;
+}
+
+.markdown-answer strong {
+  color: var(--accent);
+}
+
+.markdown-answer ul,
+.markdown-answer ol {
+  padding-left: 20px;
+}
+
+.markdown-answer table {
+  font-size: 12.5px;
+}
+
+.tool-call-row {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 860px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .content {
+    padding: 24px 20px 48px;
+    max-width: 100%;
+  }
+
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

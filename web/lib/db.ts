@@ -139,6 +139,16 @@ export async function getRecurringPayments(): Promise<RecurringPayment[]> {
   }));
 }
 
+// All user_ids that have a health score, i.e. at least one 2017-2018
+// transaction -- used to power the "look up a user" search boxes so a
+// lookup never dead-ends on a user with no data in scope.
+export async function getUserIds(): Promise<number[]> {
+  const rows = await query<{ user_id: number }>(`
+    select user_id from public_analytics.health_score order by user_id
+  `);
+  return rows.map((r) => Number(r.user_id));
+}
+
 export interface HealthScoreRow {
   user_id: number;
   savings_rate: number;
